@@ -1,137 +1,169 @@
 import streamlit as st
-import pandas as pd
-from datetime import date, datetime
-from pathlib import Path
-import json
+from datetime import date, datetime, timedelta
 
 st.set_page_config(page_title="IZ | Asistente de Carrera", page_icon="🧭", layout="centered")
-DATA = Path(__file__).parent / "data"
-DATA.mkdir(exist_ok=True)
 
-def load_json(name, default):
-    p = DATA / name
-    if p.exists():
-        try:
-            return json.loads(p.read_text(encoding='utf-8'))
-        except Exception:
-            return default
-    p.write_text(json.dumps(default, ensure_ascii=False, indent=2), encoding='utf-8')
-    return default
+# ---------- CSS ----------
+st.markdown("""
+<style>
+:root{--bg:#f7f1e8;--card:#fffaf2;--ink:#24211d;--muted:#766f67;--accent:#29231d;--line:#e6d9c9;--soft:#eee3d5;}
+.stApp{background:linear-gradient(180deg,#faf6ee 0%,#f2e8dc 100%); color:var(--ink);}
+.block-container{padding:1.2rem 1rem 6rem; max-width:720px;}
+h1,h2,h3{font-family:Georgia, 'Times New Roman', serif; color:var(--ink);}
+.small{color:var(--muted); font-size:.95rem; margin-top:-.5rem;}
+.card{background:rgba(255,250,242,.92); border:1px solid var(--line); border-radius:26px; padding:20px; margin:14px 0; box-shadow:0 10px 30px rgba(56,42,20,.06);}
+.hero{background:linear-gradient(135deg,#fffaf2,#eadbc9); border:1px solid var(--line); border-radius:34px; padding:24px; margin:12px 0 18px;}
+.pill{display:inline-block; padding:8px 14px; border-radius:999px; background:#efe4d7; color:#5c5148; font-weight:700; font-size:.9rem;}
+.mic{position:fixed; left:50%; transform:translateX(-50%); bottom:20px; width:88px; height:88px; border-radius:34px; background:#1f1b16; color:white; display:flex; align-items:center; justify-content:center; font-size:42px; box-shadow:0 18px 45px rgba(31,27,22,.35); z-index:9999; border:8px solid rgba(255,250,242,.9);}
+.navhint{position:fixed; left:0; right:0; bottom:0; background:rgba(255,250,242,.96); border-top:1px solid var(--line); height:76px; z-index:9998;}
+button[kind="secondary"]{border-radius:18px!important;}
+.stButton>button{border-radius:20px; min-height:44px; font-weight:700;}
+.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.metric{background:#fffaf2;border:1px dashed var(--line);border-radius:22px;padding:14px;}
+</style>
+""", unsafe_allow_html=True)
 
-def save_json(name, data):
-    (DATA / name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+# ---------- State ----------
+if "page" not in st.session_state: st.session_state.page = "Despacho"
+if "tasks" not in st.session_state:
+    st.session_state.tasks = [
+        {"txt":"Revisar calendario + noticias", "done":False, "tag":"Hoy"},
+        {"txt":"Dejar una nota de voz para ideas de septiembre", "done":False, "tag":"Hoy"},
+        {"txt":"Preparar 3 ideas de vídeo", "done":False, "tag":"Semana"},
+    ]
+if "ideas" not in st.session_state:
+    st.session_state.ideas = ["¿Sabías que...? sobre libros antiguos", "Vídeo: una foto, una historia", "Post: por qué Irene Zurilla escribe"]
+if "opps" not in st.session_state:
+    st.session_state.opps = ["Presentación en FNAC Callao · Madrid", "Concurso de relato histórico · cierra en 16 días", "Buscar eventos de librerías en Getafe/Leganés"]
+if "contacts" not in st.session_state:
+    st.session_state.contacts = ["Librería Cervantes · revisar en 30 días", "Biblioteca Getafe · primer contacto pendiente", "Editorial · consultar presentaciones"]
+if "inbox" not in st.session_state: st.session_state.inbox = []
 
-seed = {
- 'tasks':[{'text':'Revisar calendario','done':False},{'text':'Añadir 3 ideas de contenido','done':False},{'text':'Mirar Radar Madrid','done':False}],
- 'ideas':['¿Sabías que...? sobre libros antiguos','Vídeo: una foto, una historia','Post: por qué Irene Zurilla escribe'],
- 'events':[{'title':'Presentación FNAC Callao','when':'Viernes 19:00','type':'Presentación','place':'Madrid'},{'title':'Concurso relato histórico','when':'Cierra en 16 días','type':'Concurso','place':'Online'}],
- 'contacts':[{'name':'Librería Cervantes','note':'Revisar contacto','days':52},{'name':'Biblioteca Getafe','note':'Posible actividad infantil','days':0}],
- 'notes':[]
-}
-state = load_json('iz_data.json', seed)
+PAGES = ["Despacho","Jornada","Radar","Estudio","Calendario","Noticias","Relaciones","Libros","Marca","Dirección","Drive"]
 
-st.markdown('''<style>
-.stApp{background:#f7f1e8;color:#27231f}.block-container{padding:1.2rem 1rem 6rem;max-width:760px}.card{background:rgba(255,255,255,.55);border:1px solid #e4d9ca;border-radius:28px;padding:22px;margin:14px 0;box-shadow:0 6px 20px rgba(80,55,20,.05)}.hero{background:linear-gradient(135deg,#fffaf1,#efe0cf);border-radius:32px;padding:24px;margin:12px 0 22px}.title{font-size:38px;font-weight:800;line-height:1.05}.muted{color:#776e65}.pill{display:inline-block;border:1px solid #e1d5c6;border-radius:999px;padding:8px 14px;background:#f6eadc}.mic{background:#211e19;color:white;text-align:center;border-radius:999px;padding:18px;font-size:20px;font-weight:800;margin:12px 0}.bottom{position:fixed;left:0;right:0;bottom:0;background:rgba(255,250,240,.96);border-top:1px solid #e2d8ca;padding:8px 10px;z-index:999}.bottom a{text-decoration:none;color:#5f574f;font-weight:700;margin:0 8px}.bigmic{display:inline-block;background:#43378f;color:white;border-radius:50%;width:76px;height:76px;line-height:76px;text-align:center;font-size:34px;box-shadow:0 0 0 18px rgba(67,55,143,.10)}
-</style>''', unsafe_allow_html=True)
+def nav_buttons():
+    cols = st.columns(5)
+    items = [("🏠","Despacho"),("📅","Jornada"),("🧭","Radar"),("🎬","Estudio"),("☰","Más")]
+    for col,(ico,name) in zip(cols,items):
+        with col:
+            if st.button(f"{ico}\n{name}", use_container_width=True):
+                st.session_state.page = "Más" if name=="Más" else name
+                st.rerun()
 
-if 'page' not in st.session_state: st.session_state.page='Despacho'
-if 'cuentame' not in st.session_state: st.session_state.cuentame=False
-
-def nav_button(label):
-    if st.button(label, use_container_width=True): st.session_state.page=label.split(' ',1)[1] if ' ' in label else label
-
-st.markdown('### 🧭 IZ | Asistente de Carrera &nbsp;&nbsp; <span class="pill">V0.5</span>', unsafe_allow_html=True)
-
-if st.session_state.cuentame:
-    st.markdown('<div class="card"><div class="title">🎙 Cuéntame</div><p class="muted">Habla o escribe. En esta beta lo guardamos en Bandeja de entrada.</p>', unsafe_allow_html=True)
-    cat=st.selectbox('Tipo', ['Idea','Contacto','Evento','Recordatorio','Noticia','Fecha','Nota libre'])
-    txt=st.text_area('¿Qué quieres contarme?', placeholder='Ej: Acabo de salir de una presentación...')
-    c1,c2=st.columns(2)
-    if c1.button('🧭 Enviar al Asistente', use_container_width=True):
-        if txt.strip():
-            state['notes'].append({'date':datetime.now().isoformat(timespec='minutes'),'type':cat,'text':txt.strip()})
-            if cat=='Idea': state['ideas'].insert(0, txt.strip())
-            save_json('iz_data.json', state)
-            st.success('Guardado y organizado.')
-    if c2.button('Cerrar', use_container_width=True): st.session_state.cuentame=False; st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-page=st.session_state.page
-
-def despacho():
-    h=datetime.now().hour; saludo='Buenos días' if h<14 else 'Buenas tardes' if h<21 else 'Buenas noches'
-    st.markdown(f'<div class="hero"><div class="title">{saludo}, Irene</div><p class="muted">Tu despacho de autora · {date.today().strftime("%d/%m/%Y")}</p></div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><h3>🧭 Brújula</h3><p>Hoy revisaría <b>calendario + noticias</b> y dejaría una nota de voz con ideas para septiembre.</p></div>', unsafe_allow_html=True)
-    if st.button('🎙 Contárselo al Director', use_container_width=True): st.session_state.cuentame=True; st.rerun()
-    st.markdown('<div class="card"><h3>🎯 Prioridades</h3>', unsafe_allow_html=True)
-    for i,t in enumerate(state['tasks'][:3]):
-        done=st.checkbox(t['text'], value=t['done'], key=f'top{i}')
-        state['tasks'][i]['done']=done
-    save_json('iz_data.json', state)
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><h3>🔥 Oportunidad destacada</h3><b>Presentación FNAC Callao</b><br><span class="muted">Viernes · 19:00 · Madrid</span></div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><h3>⏳ Próximo hito</h3><b>Publicación del libro</b><br><span style="font-size:36px;font-weight:800">143</span> días</div>', unsafe_allow_html=True)
-
-def jornada():
-    st.markdown('<div class="hero"><div class="title">📅 Jornada</div><p class="muted">Hoy, mañana y esta semana.</p></div>', unsafe_allow_html=True)
-    new=st.text_input('Nueva tarea')
-    if st.button('Añadir tarea') and new.strip():
-        state['tasks'].append({'text':new.strip(),'done':False}); save_json('iz_data.json', state); st.rerun()
-    for i,t in enumerate(state['tasks']):
-        state['tasks'][i]['done']=st.checkbox(t['text'], value=t['done'], key=f'task{i}')
-    save_json('iz_data.json', state)
-
-def radar():
-    st.markdown('<div class="hero"><div class="title">🧭 Radar</div><p class="muted">Eventos, noticias y oportunidades.</p></div>', unsafe_allow_html=True)
-    tabs=st.tabs(['Madrid','Noticias','Concursos','Favoritos'])
-    with tabs[0]:
-        for e in state['events']:
-            st.markdown(f'<div class="card"><b>{e["title"]}</b><br><span class="muted">{e["when"]} · {e["place"]}</span></div>', unsafe_allow_html=True)
-    with tabs[1]:
-        st.info('Noticias reales se conectarán en la siguiente fase. Aquí aparecerán libros, historia, editoriales y cultura.')
-    with tabs[2]: st.write('Concursos guardados y plazos.')
-    with tabs[3]: st.write('FNAC, Casa del Libro, librerías, bibliotecas y espacios favoritos.')
-
-def estudio():
-    st.markdown('<div class="hero"><div class="title">🎬 Estudio Editorial</div><p class="muted">Banco de contenidos y producción.</p></div>', unsafe_allow_html=True)
-    idea=st.text_input('Nueva idea')
-    if st.button('Guardar idea') and idea.strip():
-        state['ideas'].insert(0, idea.strip()); save_json('iz_data.json', state); st.rerun()
-    st.markdown('<div class="card"><h3>💡 Ideas</h3>', unsafe_allow_html=True)
-    for x in state['ideas']: st.write('💡', x)
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><b>🎙 Grabar</b><br>Curiosidad: primer bestseller<br>Vídeo: por qué me gusta la historia</div>', unsafe_allow_html=True)
-
-def calendario():
-    st.markdown('<div class="hero"><div class="title">🗓 Calendario</div><p class="muted">Fechas clave y próximos hitos.</p></div>', unsafe_allow_html=True)
-    for x in ['Viernes: Radar del fin de semana','Domingo tarde: Reunión de Dirección','23 abril: Día del Libro','Diciembre: campaña de lanzamiento']:
-        st.markdown(f'<div class="card">{x}</div>', unsafe_allow_html=True)
-
-def mas():
-    st.markdown('<div class="hero"><div class="title">☰ Más</div><p class="muted">Relaciones, libros, marca y dirección.</p></div>', unsafe_allow_html=True)
-    for name in ['🤝 Relaciones','📚 Libros','🛡 Marca','📈 Dirección','📥 Bandeja de entrada']:
-        if st.button(name, use_container_width=True): st.session_state.page=name.split(' ',1)[1]; st.rerun()
-
-def relaciones():
-    st.markdown('<div class="hero"><div class="title">🤝 Relaciones</div></div>', unsafe_allow_html=True)
-    for c in state['contacts']: st.markdown(f'<div class="card"><b>{c["name"]}</b><br><span class="muted">{c["note"]} · hace {c["days"]} días</span></div>', unsafe_allow_html=True)
-
-def libros():
-    st.markdown('<div class="hero"><div class="title">📚 Libros</div></div>', unsafe_allow_html=True)
-    st.markdown('<div class="card"><h3>El libro mágico de Hugo e Inés</h3><p>Estado: preparando campaña · Editorial: pendiente · Próximo paso: materiales de autora.</p></div>', unsafe_allow_html=True)
-
-def bandeja():
-    st.markdown('<div class="hero"><div class="title">📥 Bandeja</div><p class="muted">Todo lo que le cuentas al Director.</p></div>', unsafe_allow_html=True)
-    for n in reversed(state['notes']): st.markdown(f'<div class="card"><b>{n["type"]}</b><br>{n["text"]}<br><span class="muted">{n["date"]}</span></div>', unsafe_allow_html=True)
-
-pages={'Despacho':despacho,'Jornada':jornada,'Radar':radar,'Estudio':estudio,'Calendario':calendario,'Más':mas,'Relaciones':relaciones,'Libros':libros,'Bandeja de entrada':bandeja,'Marca':lambda: st.write('🛡 Marca en construcción'),'Dirección':lambda: st.write('📈 Dirección en construcción')}
-pages.get(page, despacho)()
-
-st.markdown('<div style="height:90px"></div>', unsafe_allow_html=True)
-st.markdown('<div class="bottom"><div style="display:flex;align-items:center;justify-content:space-around"><a href="#" onclick="return false;">🏠</a><a href="#" onclick="return false;">📅</a><span class="bigmic">🎙</span><a href="#" onclick="return false;">🧭</a><a href="#" onclick="return false;">☰</a></div></div>', unsafe_allow_html=True)
-cols=st.columns(5)
-for label,col in zip(['Despacho','Jornada','Cuéntame','Radar','Más'], cols):
-    if col.button(label, use_container_width=True):
-        if label=='Cuéntame': st.session_state.cuentame=True
-        else: st.session_state.page=label
+def mic_button():
+    st.markdown('<div class="navhint"></div><div class="mic">🎙️</div>', unsafe_allow_html=True)
+    if st.button("🎙️ Cuéntamelo al Director", use_container_width=True, type="primary"):
+        st.session_state.page = "Cuéntame"
         st.rerun()
+
+def card(title, body=""):
+    st.markdown(f"<div class='card'><h3>{title}</h3><div>{body}</div></div>", unsafe_allow_html=True)
+
+# ---------- Pages ----------
+def page_despacho():
+    hour = datetime.now().hour
+    saludo = "Buenos días" if hour < 14 else "Buenas tardes" if hour < 21 else "Buenas noches"
+    st.markdown(f"<div class='hero'><h1>{saludo}, Irene</h1><p class='small'>Tu despacho de autora · V0.7 clean</p></div>", unsafe_allow_html=True)
+    st.markdown("<div class='card'><h3>🧭 Brújula</h3><p>Hoy revisaría <b>calendario + noticias</b> y dejaría una nota de voz con cualquier idea para septiembre.</p></div>", unsafe_allow_html=True)
+    st.subheader("🎯 Prioridades")
+    for i,t in enumerate(st.session_state.tasks[:3]):
+        st.checkbox(t["txt"], value=t["done"], key=f"taskhome{i}")
+    st.subheader("🔥 Oportunidades")
+    for o in st.session_state.opps[:3]: st.write("•", o)
+    st.subheader("☕ Consejo del Director")
+    st.info("No intentes hacerlo todo hoy. Primero deja funcionando el sistema y luego construimos el plan de carrera.")
+
+def page_jornada():
+    st.markdown("<div class='hero'><h1>📅 Jornada</h1><p class='small'>Hoy · Mañana · Esta semana</p></div>", unsafe_allow_html=True)
+    new = st.text_input("Nueva tarea")
+    if st.button("+ Añadir tarea") and new:
+        st.session_state.tasks.append({"txt":new,"done":False,"tag":"Hoy"}); st.rerun()
+    for i,t in enumerate(st.session_state.tasks):
+        col1,col2 = st.columns([.15,.85])
+        with col1: t["done"] = st.checkbox("", value=t["done"], key=f"t{i}")
+        with col2: st.write(f"**{t['txt']}**  · {t['tag']}")
+
+def page_cuentame():
+    st.markdown("<div class='hero'><h1>🎙️ Cuéntame</h1><p class='small'>Habla o escribe. En esta beta lo organizamos por categoría.</p></div>", unsafe_allow_html=True)
+    cat = st.radio("Tipo", ["💡 Idea","🤝 Contacto","🎤 Evento","📅 Recordatorio","📰 Noticia","🗓 Fecha"], horizontal=True)
+    text = st.text_area("¿Qué quieres contarme?", placeholder="Ej: Acabo de salir de una presentación. He conocido a Ana, librera en Getafe...")
+    audio = st.audio_input("O graba una nota de voz")
+    if st.button("🧭 Enviar al Asistente", type="primary", use_container_width=True):
+        st.session_state.inbox.append({"cat":cat,"text": text or "Nota de voz pendiente de transcripción", "date":str(date.today())})
+        st.success("Guardado en la bandeja del Director.")
+    st.subheader("Bandeja del Director")
+    for item in reversed(st.session_state.inbox[-5:]):
+        st.write(f"{item['cat']} · {item['date']} — {item['text']}")
+
+def page_radar():
+    st.markdown("<div class='hero'><h1>🧭 Radar</h1><p class='small'>Oportunidades, eventos, concursos y Madrid literario</p></div>", unsafe_allow_html=True)
+    tabs = st.tabs(["⭐ Recomendadas","🎤 Presentaciones","🏆 Concursos","📚 Librerías","🏛 Historia"])
+    for tab in tabs:
+        with tab:
+            for o in st.session_state.opps: st.write("•", o)
+            new = st.text_input("Añadir oportunidad", key=str(tab))
+            if st.button("Guardar", key="save"+str(tab)) and new:
+                st.session_state.opps.append(new); st.rerun()
+
+def page_estudio():
+    st.markdown("<div class='hero'><h1>🎬 Estudio Editorial</h1><p class='small'>Banco de contenidos y producción</p></div>", unsafe_allow_html=True)
+    st.metric("Ideas", len(st.session_state.ideas))
+    for idea in st.session_state.ideas: st.write("💡", idea)
+    new = st.text_input("Nueva idea de contenido")
+    if st.button("+ Nueva idea") and new:
+        st.session_state.ideas.append(new); st.rerun()
+    st.markdown("<div class='metric-row'><div class='metric'><b>🎙️ Grabar</b><br>2 piezas</div><div class='metric'><b>🗓 Programado</b><br>1 post</div></div>", unsafe_allow_html=True)
+
+def page_calendario():
+    st.markdown("<div class='hero'><h1>🗓 Calendario</h1><p class='small'>Fechas clave y planificación</p></div>", unsafe_allow_html=True)
+    today = date.today()
+    events=[("📚 Día del Libro", date(today.year,4,23)),("🎄 Campaña Navidad", date(today.year,12,1)),("📖 Lanzamiento previsto", date(today.year,12,15)),("🎭 Radar fin de semana", today + timedelta(days=(4-today.weekday())%7))]
+    for name,d in events:
+        delta=(d-today).days
+        st.write(f"**{name}** · {d.strftime('%d/%m/%Y')} · {'hoy' if delta==0 else str(delta)+' días'}")
+
+def page_noticias():
+    st.markdown("<div class='hero'><h1>📰 Noticias</h1><p class='small'>Radar editorial y cultural</p></div>", unsafe_allow_html=True)
+    st.warning("En esta V0.7 las noticias son manuales. La búsqueda web automática llegará en la siguiente fase.")
+    for n in ["Tendencias de lectura infantil", "Eventos literarios en Madrid", "Convocatorias para autores noveles"]: st.write("📰", n)
+
+def page_relaciones():
+    st.markdown("<div class='hero'><h1>🤝 Relaciones</h1><p class='small'>Contactos que cuidar</p></div>", unsafe_allow_html=True)
+    new=st.text_input("Nuevo contacto")
+    if st.button("+ Añadir contacto") and new:
+        st.session_state.contacts.append(new); st.rerun()
+    for c in st.session_state.contacts: st.write("•", c)
+
+def page_libros():
+    st.markdown("<div class='hero'><h1>📚 Libros</h1><p class='small'>Obras, campañas y presentaciones</p></div>", unsafe_allow_html=True)
+    st.progress(.35)
+    st.write("**Libro activo:** primer libro previsto para finales de año")
+    st.write("**Próximo paso:** preparar plan de campaña y contactos base")
+
+def page_mas():
+    st.markdown("<div class='hero'><h1>☰ Más</h1><p class='small'>Módulos de dirección</p></div>", unsafe_allow_html=True)
+    for p in ["Calendario","Noticias","Relaciones","Libros","Marca","Dirección","Drive"]:
+        if st.button(p, use_container_width=True): st.session_state.page=p; st.rerun()
+
+def page_simple(name, text):
+    st.markdown(f"<div class='hero'><h1>{name}</h1><p class='small'>{text}</p></div>", unsafe_allow_html=True)
+
+# ---------- Router ----------
+st.markdown("<span class='pill'>🧭 IZ | Asistente de Carrera</span>", unsafe_allow_html=True)
+page=st.session_state.page
+if page=="Despacho": page_despacho()
+elif page=="Jornada": page_jornada()
+elif page=="Cuéntame": page_cuentame()
+elif page=="Radar": page_radar()
+elif page=="Estudio": page_estudio()
+elif page=="Calendario": page_calendario()
+elif page=="Noticias": page_noticias()
+elif page=="Relaciones": page_relaciones()
+elif page=="Libros": page_libros()
+elif page=="Más": page_mas()
+elif page=="Marca": page_simple("🛡 Marca", "Patrimonio de marca, registros, dominios y material oficial.")
+elif page=="Dirección": page_simple("📈 Dirección", "Reuniones, prioridades y decisiones estratégicas.")
+elif page=="Drive": page_simple("☁️ Drive", "Pendiente: conexión con Google Drive para datos vivos y documentos.")
+
+mic_button()
+nav_buttons()
