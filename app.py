@@ -51,9 +51,11 @@ if page == "Despacho":
     for t in st.session_state.tasks:
         st.checkbox(t, key=f"task_{t}")
     st.subheader("🔥 Oportunidades")
-    st.markdown("• Presentación en FNAC Callao · Madrid  
+    st.markdown("""
+• Presentación en FNAC Callao · Madrid  
 • Concurso de relato histórico · cierra en 16 días  
-• Buscar eventos de librerías en Getafe/Leganés")
+• Buscar eventos de librerías en Getafe/Leganés
+""")
     st.subheader("📥 Bandeja de entrada")
     if st.session_state.inbox:
         for item in st.session_state.inbox[-3:][::-1]:
