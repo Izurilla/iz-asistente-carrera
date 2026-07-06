@@ -8,13 +8,26 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-VERSION = "V1.4 stable"
+VERSION = "V2.0 visual"
 
-# -----------------------------
-# Estado inicial seguro
-# -----------------------------
+MODULES = [
+    "🏠 Centro de Operaciones",
+    "🌱 Semillero",
+    "✅ Tareas",
+    "🧭 Radar",
+    "🎬 Estudio",
+    "📅 Calendario",
+    "🤝 Relaciones",
+    "📚 Libros",
+    "📰 Noticias",
+    "📈 Dirección",
+    "💡 Ideas para la app",
+]
+
+
 def init_state():
     defaults = {
+        "page": MODULES[0],
         "semillero": [
             {"tipo": "🎙️ Nota de voz", "texto": "Idea para vídeo: ¿sabías que...? sobre libros antiguos", "estado": "Por organizar"},
             {"tipo": "💡 Idea", "texto": "Crear banco de contenidos de septiembre", "estado": "Por organizar"},
@@ -31,15 +44,16 @@ def init_state():
             "Agenda cultural de Madrid para el fin de semana",
         ],
         "ideas_app": [
-            "Añadir módulo de noticias reales",
-            "Crear calendario mensual",
-            "Mejorar botón de notas de voz",
+            "Menú desplegable en lugar de botones inferiores",
+            "Botón de notas de voz siempre visible",
+            "Dashboard compacto para móvil",
         ],
         "contactos": [
             "Librerías Madrid / Getafe / Leganés",
             "Bibliotecas Comunidad de Madrid",
             "Autores y presentaciones literarias",
         ],
+        "notas_voz": [],
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -47,170 +61,245 @@ def init_state():
 
 init_state()
 
-# -----------------------------
-# Estilos
-# -----------------------------
 st.markdown(
     """
     <style>
-    :root { --bg:#fbf4ea; --card:#fffaf3; --ink:#211f1c; --muted:#6f655b; --line:#e7d8c8; --accent:#2a2340; --soft:#efe3d4; }
-    html, body, [data-testid="stAppViewContainer"] { background: radial-gradient(circle at top, #fff9f0 0%, #f8efe4 45%, #f4eadf 100%); }
-    [data-testid="stHeader"] { background: rgba(255,255,255,0); }
-    .block-container { padding-top: 1.1rem; padding-bottom: 6.5rem; max-width: 760px; }
-    h1, h2, h3, p, div, span, label { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .hero { background: linear-gradient(135deg, #f4e4d2, #fffaf3); border:1px solid var(--line); border-radius:28px; padding:26px 28px; box-shadow:0 18px 45px rgba(78,54,30,.08); margin-bottom:18px; }
-    .hero h1 { margin:0; font-size:34px; letter-spacing:-.04em; color:var(--ink); }
-    .hero p { color:var(--muted); font-size:17px; margin:.55rem 0 0; }
-    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0 18px; }
-    .kpi { background:rgba(255,250,243,.9); border:1px solid var(--line); border-radius:22px; padding:18px 10px; text-align:center; box-shadow:0 12px 28px rgba(78,54,30,.05); }
-    .kpi strong { display:block; font-size:30px; color:#5a4673; line-height:1; }
-    .kpi span { display:block; color:var(--ink); margin-top:7px; font-size:15px; }
-    .card { background:rgba(255,250,243,.95); border:1px solid var(--line); border-radius:24px; padding:20px; margin:14px 0; box-shadow:0 14px 34px rgba(78,54,30,.07); }
-    .card h2 { margin:0 0 12px 0; font-size:24px; color:var(--ink); }
-    .pill { display:inline-block; background:#efe3d4; border:1px solid #e5d3bf; padding:8px 12px; border-radius:999px; font-size:13px; margin:4px 4px 4px 0; }
-    .nav { position:fixed; bottom:0; left:0; right:0; background:rgba(255,250,243,.96); border-top:1px solid #eadccb; padding:10px 10px 16px; z-index:999; box-shadow:0 -10px 32px rgba(78,54,30,.08); }
-    .mic { position:fixed; bottom:58px; left:50%; transform:translateX(-50%); width:76px; height:76px; border-radius:28px; background:#211f1c; color:white; display:flex; align-items:center; justify-content:center; font-size:34px; z-index:1000; box-shadow:0 16px 44px rgba(0,0,0,.25); border:8px solid rgba(255,250,243,.9); }
-    .small { color:var(--muted); font-size:14px; }
-    @media (max-width: 520px) { .hero h1 {font-size:28px;} .grid {gap:8px;} .kpi strong {font-size:26px;} .block-container {padding-left:1rem; padding-right:1rem;} }
+    :root{
+      --bg:#f6eadf; --panel:#fffaf3; --panel2:#f0ddc8; --ink:#201d1b; --muted:#7a6a5c;
+      --line:#e6d4c2; --accent:#2b243b; --accent2:#6f567f; --green:#6f8a75;
+      --shadow:0 16px 40px rgba(76,52,31,.10);
+    }
+    html, body, [data-testid="stAppViewContainer"]{
+      background: radial-gradient(circle at top left,#fff9f2 0%,#f7ecdf 42%,#f2e4d7 100%);
+    }
+    [data-testid="stHeader"]{background:rgba(255,255,255,0)}
+    .block-container{padding-top:.7rem;padding-bottom:7.2rem;max-width:680px;}
+    h1,h2,h3,p,div,span,label{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+    div[data-testid="stSelectbox"] label{display:none;}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+    .brand{font-weight:800;letter-spacing:-.04em;font-size:24px;color:var(--ink);}
+    .version{font-size:12px;color:var(--muted);background:rgba(255,250,243,.65);border:1px solid var(--line);padding:6px 10px;border-radius:999px;}
+    .hero{background:linear-gradient(135deg,#ead5bd 0%,#fff8ef 100%);border:1px solid var(--line);border-radius:30px;padding:22px 22px 20px;box-shadow:var(--shadow);margin:8px 0 14px;}
+    .hero h1{font-size:30px;margin:0;color:var(--ink);letter-spacing:-.055em;line-height:1.04;}
+    .hero p{font-size:15px;color:var(--muted);margin:9px 0 0;}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 4px;}
+    .kpi{background:rgba(255,250,243,.9);border:1px solid var(--line);border-radius:20px;padding:12px 7px;text-align:center;box-shadow:0 8px 24px rgba(76,52,31,.06);}
+    .kpi b{display:block;font-size:24px;line-height:1;color:var(--accent2)}
+    .kpi span{display:block;margin-top:5px;font-size:11.5px;color:var(--muted)}
+    .card{background:rgba(255,250,243,.94);border:1px solid var(--line);border-radius:24px;padding:16px;margin:10px 0;box-shadow:0 10px 28px rgba(76,52,31,.07);}
+    .card h2{font-size:19px;letter-spacing:-.025em;margin:0 0 8px;color:var(--ink)}
+    .card p{font-size:14.5px;line-height:1.45;color:var(--muted);margin:0 0 8px;}
+    .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+    .mini{background:#f3e4d5;border:1px solid #e4d0bc;border-radius:20px;padding:13px;min-height:76px;}
+    .mini strong{display:block;color:var(--ink);font-size:14px;margin-bottom:4px}
+    .mini span{font-size:12.5px;color:var(--muted)}
+    .pill{display:inline-block;background:#efe1d2;border:1px solid #e2ccb6;color:#3b332d;padding:7px 10px;border-radius:999px;font-size:12px;margin:3px 3px 0 0;}
+    .floating-mic{position:fixed;right:18px;bottom:22px;width:76px;height:76px;border-radius:28px;background:linear-gradient(135deg,#201d1b,#37304c);color:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;z-index:9999;box-shadow:0 18px 50px rgba(0,0,0,.28);border:7px solid rgba(255,250,243,.95);}
+    .hint{font-size:12px;color:var(--muted);text-align:center;margin-top:-4px;margin-bottom:8px;}
+    .section-title{font-size:22px;font-weight:800;letter-spacing:-.04em;margin:6px 0 8px;color:var(--ink);}
+    .divider{height:1px;background:var(--line);margin:10px 0;}
+    .stButton>button{border-radius:16px;border:1px solid #dfcbb7;background:#fffaf3;color:#211f1c;font-weight:650;}
+    .stButton>button:hover{border-color:#bda58e;background:#f4e6d8;}
+    @media(max-width:520px){
+      .block-container{padding-left:1rem;padding-right:1rem;}
+      .hero h1{font-size:27px;}
+      .kpi-grid{gap:7px;}
+      .kpi{padding:11px 4px;border-radius:18px;}
+      .kpi b{font-size:22px;}
+      .kpi span{font-size:10.5px;}
+      .mini-grid{grid-template-columns:1fr 1fr;}
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# -----------------------------
-# Navegación
-# -----------------------------
-if "page" not in st.session_state:
-    st.session_state.page = "Centro"
 
-
-def nav_button(label, page):
-    if st.button(label, use_container_width=True, key=f"nav_{page}"):
-        st.session_state.page = page
+def top_menu():
+    st.markdown('<div class="topbar"><div class="brand">🧭 IZ</div><div class="version">' + VERSION + '</div></div>', unsafe_allow_html=True)
+    selected = st.selectbox("Menú", MODULES, index=MODULES.index(st.session_state.page) if st.session_state.page in MODULES else 0, key="menu_select")
+    if selected != st.session_state.page:
+        st.session_state.page = selected
         st.rerun()
+    st.markdown('<div class="hint">Usa el desplegable para moverte por la app · El micrófono queda siempre visible</div>', unsafe_allow_html=True)
 
 
-def bottom_nav():
-    st.markdown('<div class="mic">🎙️</div>', unsafe_allow_html=True)
-    st.markdown('<div class="nav">', unsafe_allow_html=True)
-    cols = st.columns(5)
-    with cols[0]: nav_button("🏠 Centro", "Centro")
-    with cols[1]: nav_button("🌱 Semillero", "Semillero")
-    with cols[2]: nav_button("✅ Tareas", "Tareas")
-    with cols[3]: nav_button("🧭 Radar", "Radar")
-    with cols[4]: nav_button("☰ Más", "Mas")
-    st.markdown('</div>', unsafe_allow_html=True)
+def card(title, body, pills=None):
+    pill_html = ""
+    if pills:
+        pill_html = "".join([f'<span class="pill">{p}</span>' for p in pills])
+    st.markdown(f'<div class="card"><h2>{title}</h2><p>{body}</p>{pill_html}</div>', unsafe_allow_html=True)
 
 
-def hero(title, subtitle):
-    st.markdown(f'<div class="hero"><h1>{title}</h1><p>{subtitle}</p></div>', unsafe_allow_html=True)
-
-
-def render_card(title, body_html):
-    st.markdown(f'<div class="card"><h2>{title}</h2>{body_html}</div>', unsafe_allow_html=True)
-
-# -----------------------------
-# Páginas
-# -----------------------------
 def page_centro():
-    hero("Centro de Operaciones", f"Buenos días, Irene · {VERSION}")
     st.markdown(
         f"""
-        <div class="grid">
-            <div class="kpi"><strong>{len(st.session_state.tareas_hoy)}</strong><span>Tareas</span></div>
-            <div class="kpi"><strong>{len(st.session_state.semillero)}</strong><span>Semillas</span></div>
-            <div class="kpi"><strong>{len(st.session_state.oportunidades)}</strong><span>Oportunidades</span></div>
+        <div class="hero">
+          <h1>Centro de Operaciones</h1>
+          <p>Buenos días, Irene. Esto es lo que necesita tu atención ahora.</p>
+          <div class="kpi-grid">
+            <div class="kpi"><b>{len(st.session_state.tareas_hoy)}</b><span>Tareas</span></div>
+            <div class="kpi"><b>{len(st.session_state.semillero)}</b><span>Semillero</span></div>
+            <div class="kpi"><b>{len(st.session_state.oportunidades)}</b><span>Radar</span></div>
+            <div class="kpi"><b>1</b><span>Agenda</span></div>
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    render_card("🧭 Brújula", "<p>Esta semana no intentaría hacerlo todo. Prioridad: dejar estable el sistema y empezar a mover la marca.</p>")
-    st.markdown('<div class="card"><h2>🎯 Prioridades</h2>', unsafe_allow_html=True)
-    for tarea in st.session_state.tareas_hoy[:3]:
-        st.checkbox(tarea, key=f"centro_{tarea}")
+    card("🎯 Prioridad del día", "Dejar estable la app y recuperar el dashboard móvil. No añadir más módulos hasta que la pantalla principal sea cómoda.", ["Hoy", "Alta prioridad"])
+    st.markdown('<div class="mini-grid">', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-    render_card("🌱 Semillero", f"<p>{len(st.session_state.semillero)} elementos por organizar.</p><span class='pill'>Notas de voz</span><span class='pill'>Ideas</span><span class='pill'>Contactos</span>")
-    render_card("🔥 Radar rápido", "<p>4 oportunidades detectadas para revisar esta semana.</p><span class='pill'>Madrid</span><span class='pill'>Librerías</span><span class='pill'>Concursos</span>")
+    col1, col2 = st.columns(2)
+    with col1:
+        card("📚 Libro activo", "El libro mágico de Hugo e Inés · campaña inicial en preparación.", ["Infantil", "Lanzamiento"])
+    with col2:
+        card("🧭 Radar rápido", "4 oportunidades pendientes de revisar esta semana.", ["Madrid", "Eventos"])
+    col3, col4 = st.columns(2)
+    with col3:
+        card("🌱 Semillero", f"{len(st.session_state.semillero)} elementos sin organizar.", ["Notas", "Ideas"])
+    with col4:
+        card("🎙️ Última nota", "Pendiente de grabar o escribir desde Notas de voz.", ["Audio"])
+    card("☕ Consejo de Dirección", "Esta versión debe sentirse útil en móvil antes de crecer. Menos scroll, más decisión.", ["Dirección"])
 
 
 def page_semillero():
-    hero("Semillero", "Notas, ideas y oportunidades pendientes de organizar.")
+    st.markdown('<div class="section-title">🌱 Semillero</div>', unsafe_allow_html=True)
     with st.form("nueva_semilla", clear_on_submit=True):
         tipo = st.selectbox("Tipo", ["🎙️ Nota de voz", "💡 Idea", "👤 Contacto", "📅 Evento", "📰 Noticia", "🏆 Concurso", "📌 Tarea"])
-        texto = st.text_area("Contenido", placeholder="Escribe aquí lo que quieres guardar...")
-        submitted = st.form_submit_button("Guardar en Semillero")
-        if submitted and texto.strip():
+        texto = st.text_area("Contenido", placeholder="Guarda aquí algo que todavía no sabes dónde colocar...")
+        if st.form_submit_button("Guardar en Semillero") and texto.strip():
             st.session_state.semillero.insert(0, {"tipo": tipo, "texto": texto.strip(), "estado": "Por organizar"})
-            st.success("Guardado en Semillero")
-    for i, item in enumerate(st.session_state.semillero):
-        render_card(f"{item['tipo']}", f"<p>{item['texto']}</p><span class='pill'>{item['estado']}</span>")
+            st.success("Guardado")
+    for item in st.session_state.semillero:
+        card(item["tipo"], item["texto"], [item["estado"]])
 
 
 def page_tareas():
-    hero("Tareas", "Lo que toca hacer, sin ruido.")
+    st.markdown('<div class="section-title">✅ Tareas</div>', unsafe_allow_html=True)
     with st.form("nueva_tarea", clear_on_submit=True):
         nueva = st.text_input("Nueva tarea")
-        if st.form_submit_button("Añadir tarea") and nueva.strip():
+        if st.form_submit_button("Añadir") and nueva.strip():
             st.session_state.tareas_hoy.append(nueva.strip())
             st.success("Tarea añadida")
     st.markdown('<div class="card"><h2>🔥 Hoy</h2>', unsafe_allow_html=True)
     for tarea in st.session_state.tareas_hoy:
         st.checkbox(tarea, key=f"tarea_{tarea}")
     st.markdown('</div>', unsafe_allow_html=True)
-    render_card("📅 Esta semana", "<p>Preparar base de contactos · Crear banco de contenidos · Revisar agenda cultural.</p>")
-    render_card("⏳ Próximamente", "<p>Dossier de autora · Registro de marca · Calendario editorial de septiembre.</p>")
+    card("📅 Esta semana", "Preparar base de contactos · Revisar agenda cultural · Crear banco de contenidos.")
+    card("⏳ Próximamente", "Dossier de autora · Registro de marca · Calendario editorial de septiembre.")
 
 
 def page_radar():
-    hero("Radar", "Oportunidades que pueden mover tu carrera.")
+    st.markdown('<div class="section-title">🧭 Radar</div>', unsafe_allow_html=True)
     tabs = st.tabs(["⭐ Recomendado", "🎤 Eventos", "🏆 Concursos", "📰 Noticias"])
     with tabs[0]:
         for op in st.session_state.oportunidades:
-            render_card("Oportunidad", f"<p>{op}</p><span class='pill'>Revisar</span>")
+            card("Oportunidad", op, ["Revisar"])
     with tabs[1]:
-        st.write("Presentaciones, librerías, bibliotecas y vida cultural de Madrid.")
+        card("Madrid literario", "Presentaciones, librerías, bibliotecas y vida cultural de Madrid.", ["Pendiente"])
     with tabs[2]:
-        st.write("Concursos literarios y convocatorias para autora.")
+        card("Concursos", "Convocatorias para relatos, infantil y autora novel.", ["Pendiente"])
     with tabs[3]:
-        st.write("Noticias del sector editorial y cultural.")
+        card("Noticias", "Noticias del mundo editorial, libros e historia.", ["Pendiente"])
 
 
-def page_mas():
-    hero("Más", "Módulos en construcción.")
-    option = st.radio("Abrir", ["🎬 Estudio", "📚 Libros", "🤝 Relaciones", "📅 Calendario", "📈 Dirección", "💡 Ideas para la app"], label_visibility="collapsed")
-    if option == "💡 Ideas para la app":
-        with st.form("idea_app", clear_on_submit=True):
-            idea = st.text_input("Nueva idea para mejorar la app")
-            if st.form_submit_button("Guardar idea") and idea.strip():
-                st.session_state.ideas_app.append(idea.strip())
-                st.success("Idea guardada")
-        for idea in st.session_state.ideas_app:
-            render_card("💡 Idea para la app", f"<p>{idea}</p><span class='pill'>Nueva</span>")
-    elif option == "🤝 Relaciones":
-        for contacto in st.session_state.contactos:
-            render_card("Contacto / categoría", f"<p>{contacto}</p>")
-    elif option == "📚 Libros":
-        render_card("📖 Libro activo", "<p>El libro mágico de Hugo e Inés</p><span class='pill'>Campaña inicial</span><span class='pill'>Presentaciones</span>")
-    elif option == "🎬 Estudio":
-        render_card("🎬 Estudio Editorial", "<p>Ideas · Guiones · Grabar · Editar · Programar · Publicado</p>")
-    elif option == "📅 Calendario":
-        render_card("📅 Calendario", "<p>Próxima fase: vista semanal y mensual.</p>")
-    elif option == "📈 Dirección":
-        render_card("📈 Dirección", "<p>Domingo: reunión de dirección. Viernes: radar del fin de semana. Mensual: revisión estratégica.</p>")
+def page_estudio():
+    st.markdown('<div class="section-title">🎬 Estudio</div>', unsafe_allow_html=True)
+    cols = st.columns(3)
+    stages = [("💡 Ideas", "24"), ("📝 Guiones", "6"), ("🎙️ Grabar", "8"), ("✂️ Editar", "3"), ("📅 Programar", "5"), ("✅ Publicado", "12")]
+    for idx, (name, count) in enumerate(stages):
+        with cols[idx % 3]:
+            card(name, f"{count} elementos", [])
 
-# -----------------------------
-# Render
-# -----------------------------
-page = st.session_state.page
-if page == "Centro":
+
+def page_calendario():
+    st.markdown('<div class="section-title">📅 Calendario</div>', unsafe_allow_html=True)
+    card("Hoy", "Revisar app · probar dashboard · anotar sugerencias.", ["Trabajo app"])
+    card("Viernes", "Radar del fin de semana.", ["Rutina"])
+    card("Domingo", "Reunión de Dirección.", ["Rutina"])
+
+
+def page_relaciones():
+    st.markdown('<div class="section-title">🤝 Relaciones</div>', unsafe_allow_html=True)
+    for c in st.session_state.contactos:
+        card("Contacto / categoría", c, ["Seguimiento"])
+
+
+def page_libros():
+    st.markdown('<div class="section-title">📚 Libros</div>', unsafe_allow_html=True)
+    card("El libro mágico de Hugo e Inés", "Libro infantil activo. Preparar campaña, presentaciones y materiales.", ["Activo", "Infantil"])
+    card("Preludio de un ocaso", "Relato en expediente de autora. Revisar oportunidades de concurso.", ["Relato"])
+
+
+def page_noticias():
+    st.markdown('<div class="section-title">📰 Noticias</div>', unsafe_allow_html=True)
+    card("Noticias reales", "Próximo paso: conectar este módulo a búsquedas web y guardar noticias útiles.", ["V futura"])
+
+
+def page_direccion():
+    st.markdown('<div class="section-title">📈 Dirección</div>', unsafe_allow_html=True)
+    card("Rutina", "Domingo: reunión de dirección. Viernes: radar del fin de semana. Mensual: revisión estratégica.", ["Aprobado"])
+    card("Criterio", "La app está al servicio de tu carrera. No construiremos funciones que no ayuden a tomar decisiones.", ["Regla"])
+
+
+def page_ideas_app():
+    st.markdown('<div class="section-title">💡 Ideas para la app</div>', unsafe_allow_html=True)
+    with st.form("idea_app", clear_on_submit=True):
+        idea = st.text_input("Nueva idea")
+        if st.form_submit_button("Guardar idea") and idea.strip():
+            st.session_state.ideas_app.insert(0, idea.strip())
+            st.success("Idea guardada")
+    for idea in st.session_state.ideas_app:
+        card("💡 Idea", idea, ["Nueva"])
+
+
+def page_notas_voz():
+    st.markdown('<div class="section-title">🎙️ Notas de voz</div>', unsafe_allow_html=True)
+    st.info("De momento funciona como captura escrita. La grabación real llegará en una versión posterior.")
+    with st.form("nota_voz", clear_on_submit=True):
+        nota = st.text_area("Nota rápida", placeholder="Escribe o transcribe lo que quieras guardar...")
+        if st.form_submit_button("Guardar nota") and nota.strip():
+            st.session_state.notas_voz.insert(0, nota.strip())
+            st.session_state.semillero.insert(0, {"tipo": "🎙️ Nota de voz", "texto": nota.strip(), "estado": "Por organizar"})
+            st.success("Nota guardada en Semillero")
+    for n in st.session_state.notas_voz:
+        card("🎙️ Nota", n, ["Reciente"])
+
+
+def floating_mic():
+    st.markdown('<div class="floating-mic">🎙️</div>', unsafe_allow_html=True)
+    if st.button("🎙️ Notas de voz", use_container_width=True):
+        st.session_state.page = "🎙️ Notas de voz"
+        st.rerun()
+
+
+top_menu()
+
+# Añadimos la página de notas aunque no esté en el desplegable para mantenerla como acción fija.
+if st.session_state.page == "🏠 Centro de Operaciones":
     page_centro()
-elif page == "Semillero":
+elif st.session_state.page == "🌱 Semillero":
     page_semillero()
-elif page == "Tareas":
+elif st.session_state.page == "✅ Tareas":
     page_tareas()
-elif page == "Radar":
+elif st.session_state.page == "🧭 Radar":
     page_radar()
-elif page == "Mas":
-    page_mas()
+elif st.session_state.page == "🎬 Estudio":
+    page_estudio()
+elif st.session_state.page == "📅 Calendario":
+    page_calendario()
+elif st.session_state.page == "🤝 Relaciones":
+    page_relaciones()
+elif st.session_state.page == "📚 Libros":
+    page_libros()
+elif st.session_state.page == "📰 Noticias":
+    page_noticias()
+elif st.session_state.page == "📈 Dirección":
+    page_direccion()
+elif st.session_state.page == "💡 Ideas para la app":
+    page_ideas_app()
+elif st.session_state.page == "🎙️ Notas de voz":
+    page_notas_voz()
 
-bottom_nav()
+floating_mic()
