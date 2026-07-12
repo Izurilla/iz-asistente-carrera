@@ -1,4 +1,5 @@
 import base64
+from datetime import date, datetime
 from pathlib import Path
 
 import streamlit as st
@@ -10,36 +11,59 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-VERSION = "V3.0 · Rediseño Hoy"
+VERSION = "V3.1 · Hoy funcional"
 
 # ---------- ESTADO ----------
-if "page" not in st.session_state:
-    st.session_state.page = "Centro de Operaciones"
-if "semillero" not in st.session_state:
-    st.session_state.semillero = [
-        {
-            "tipo": "Nota de voz",
-            "texto": "Idea para vídeo: ¿sabías que...? sobre libros antiguos.",
-            "estado": "Por organizar",
-        },
-        {
-            "tipo": "Idea",
-            "texto": "Crear banco de contenidos para septiembre.",
-            "estado": "Por organizar",
-        },
-    ]
-if "tareas" not in st.session_state:
-    st.session_state.tareas = [
-        {"texto": "Revisar calendario y noticias", "hecha": False},
-        {"texto": "Preparar base de contactos", "hecha": False},
-        {"texto": "Crear banco de contenidos", "hecha": False},
-    ]
-if "ideas_app" not in st.session_state:
-    st.session_state.ideas_app = [
-        "El menú en móvil debe ser compacto.",
-        "Acceso rápido a notas de voz.",
-        "La pantalla principal debe centrarse en lo que ocurre hoy.",
-    ]
+def init_state() -> None:
+    defaults = {
+        "page": "Centro de Operaciones",
+        "semillero": [
+            {
+                "tipo": "Nota de voz",
+                "texto": "Idea para vídeo: ¿sabías que...? sobre libros antiguos.",
+                "estado": "Por organizar",
+                "fecha": str(date.today()),
+            },
+            {
+                "tipo": "Idea",
+                "texto": "Crear banco de contenidos para septiembre.",
+                "estado": "Por organizar",
+                "fecha": str(date.today()),
+            },
+        ],
+        "tareas": [
+            {"texto": "Revisar calendario y noticias", "hecha": False, "fecha": str(date.today())},
+            {"texto": "Preparar base de contactos", "hecha": False, "fecha": str(date.today())},
+            {"texto": "Crear banco de contenidos", "hecha": False, "fecha": str(date.today())},
+        ],
+        "eventos": [
+            {
+                "titulo": "Presentación literaria por revisar",
+                "hora": "18:30",
+                "lugar": "Madrid",
+                "fecha": str(date.today()),
+            }
+        ],
+        "contactos": [
+            {"nombre": "Editorial Apuleyo", "tipo": "Editorial", "nota": "Seguimiento editorial"},
+            {"nombre": "Librerías de Madrid", "tipo": "Librería", "nota": "Base de contactos pendiente"},
+        ],
+        "noticias": [
+            {"titulo": "Concurso de relato histórico", "detalle": "Cierra en 16 días"},
+            {"titulo": "Agenda cultural de Madrid", "detalle": "Revisar próximos eventos literarios"},
+        ],
+        "ideas_app": [
+            "El menú en móvil debe ser compacto.",
+            "Acceso rápido a notas de voz.",
+            "La pantalla principal debe centrarse en lo que ocurre hoy.",
+        ],
+    }
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+init_state()
 
 # ---------- ESTILO ----------
 st.markdown(
@@ -48,7 +72,6 @@ st.markdown(
 :root{
   --bg:#fbf5ec;
   --card:#fffdf8;
-  --soft:#efe0d1;
   --line:#e5d5c7;
   --text:#1f1e22;
   --muted:#776e67;
@@ -57,131 +80,61 @@ st.markdown(
 html, body, [data-testid="stAppViewContainer"] {
   background: radial-gradient(circle at top, #fffaf1 0%, #fbf5ec 42%, #f3e7d8 100%);
 }
-[data-testid="stHeader"], [data-testid="stToolbar"]{
-  background: rgba(255,255,255,0.55) !important;
+[data-testid="stHeader"]{
+  height: 1.9rem !important;
+  background: rgba(255,255,255,0.36) !important;
 }
 .block-container{
-  padding-top: .8rem !important;
+  padding-top: .25rem !important;
   padding-bottom: 2rem !important;
   max-width: 740px !important;
 }
-.iz-brand-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
+.iz-brand-row{display:flex;align-items:center;gap:8px;}
 .iz-logo{
-  width:52px;
-  height:52px;
-  border-radius:50%;
-  object-fit:cover;
-  box-shadow:0 7px 20px rgba(60,45,30,.12);
+  width:38px;height:38px;border-radius:50%;object-fit:cover;
+  box-shadow:0 5px 15px rgba(60,45,30,.10);
 }
-.iz-wordmark{
-  font-size:25px;
-  font-weight:850;
-  letter-spacing:-.04em;
-}
-.version{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:2px;
-}
-.today-head{
-  margin:.7rem 0 .8rem 0;
-}
-.today-head h1{
-  margin:0;
-  font-size:34px;
-  line-height:1.05;
-  letter-spacing:-.045em;
-}
-.today-head p{
-  margin:7px 0 0 0;
-  color:var(--muted);
-  font-size:16px;
-}
+.iz-wordmark{font-size:22px;font-weight:850;letter-spacing:-.04em;}
+.version{color:var(--muted);font-size:11px;margin-top:1px;}
+.today-head{margin:.45rem 0 .55rem 0;}
+.today-head h1{margin:0;font-size:32px;line-height:1.05;letter-spacing:-.045em;}
+.today-head p{margin:6px 0 0 0;color:var(--muted);font-size:15px;}
 .section-label{
-  font-size:13px;
-  font-weight:800;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  color:var(--muted);
-  margin:.9rem 0 .25rem 0;
+  font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);margin:.8rem 0 .2rem 0;
 }
 .info-card{
-  border:1px solid var(--line);
-  border-radius:22px;
-  padding:17px 18px;
-  background:rgba(255,255,255,.88);
-  box-shadow:0 9px 23px rgba(68,45,25,.055);
-  margin:.45rem 0;
+  border:1px solid var(--line);border-radius:20px;padding:15px 16px;
+  background:rgba(255,255,255,.88);box-shadow:0 8px 20px rgba(68,45,25,.05);margin:.35rem 0;
 }
-.info-card h3{
-  margin:0 0 8px 0;
-  font-size:19px;
-  letter-spacing:-.025em;
-}
-.info-card p{
-  margin:4px 0;
-  color:#3d3834;
-  line-height:1.45;
-}
-.info-card .muted{
-  color:var(--muted);
-  font-size:14px;
-}
-.compact-list{
-  margin:0;
-  padding-left:1.15rem;
-}
-.compact-list li{
-  margin:.35rem 0;
-  color:#3d3834;
-}
+.info-card h3{margin:0 0 7px 0;font-size:18px;letter-spacing:-.025em;}
+.info-card p{margin:4px 0;color:#3d3834;line-height:1.4;}
+.info-card .muted{color:var(--muted);font-size:13px;}
+.compact-list{margin:0;padding-left:1.1rem;}
+.compact-list li{margin:.28rem 0;color:#3d3834;}
 .status-pill{
-  display:inline-block;
-  padding:5px 10px;
-  border-radius:999px;
-  background:#ead9c9;
-  border:1px solid #dfcdbc;
-  color:#3b332d;
-  font-size:12px;
-  margin-top:6px;
+  display:inline-block;padding:5px 10px;border-radius:999px;background:#ead9c9;
+  border:1px solid #dfcdbc;color:#3b332d;font-size:12px;margin-top:6px;
 }
 .stButton > button{
-  width:100%;
-  border-radius:16px !important;
-  min-height:42px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.82);
-  color:var(--text);
+  width:100%;border-radius:15px !important;min-height:40px;border:1px solid var(--line);
+  background:rgba(255,255,255,.84);color:var(--text);
 }
-[data-testid="stPopover"] > button{
-  border-radius:16px !important;
-  min-height:42px;
-}
+[data-testid="stPopover"] > button{border-radius:15px !important;min-height:40px;}
 [data-testid="stVerticalBlockBorderWrapper"]{
-  border-radius:22px !important;
-  border-color:var(--line) !important;
-  background:rgba(255,255,255,.72);
+  border-radius:20px !important;border-color:var(--line) !important;background:rgba(255,255,255,.72);
 }
-.menu-title{
-  font-size:12px;
-  font-weight:850;
-  letter-spacing:.09em;
-  color:var(--muted);
-  margin:8px 0 3px 0;
-}
+.menu-title{font-size:12px;font-weight:850;letter-spacing:.09em;color:var(--muted);margin:8px 0 3px 0;}
+.quick-row{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:.45rem 0 .3rem;}
+.quick-chip{border:1px solid var(--line);background:rgba(255,255,255,.82);border-radius:16px;padding:11px 12px;}
+.quick-chip strong{display:block;font-size:13px;}
+.quick-chip span{display:block;color:var(--muted);font-size:12px;margin-top:2px;}
 @media(max-width:520px){
-  .block-container{
-    padding-left:.85rem !important;
-    padding-right:.85rem !important;
-  }
-  .iz-logo{width:46px;height:46px;}
-  .iz-wordmark{font-size:23px;}
-  .today-head h1{font-size:31px;}
-  .info-card{padding:15px 16px;border-radius:19px;}
+  .block-container{padding-left:.8rem !important;padding-right:.8rem !important;}
+  .iz-logo{width:34px;height:34px;}
+  .iz-wordmark{font-size:21px;}
+  .today-head h1{font-size:29px;}
+  .info-card{padding:14px 15px;border-radius:18px;}
 }
 </style>
 """,
@@ -202,8 +155,8 @@ def go(page: str) -> None:
     st.rerun()
 
 
-# ---------- CABECERA FIJA Y MENÚ COMPACTO ----------
-brand_col, voice_col, menu_col = st.columns([5.2, 1.15, 1.15], vertical_alignment="center")
+# ---------- CABECERA ----------
+brand_col, voice_col, menu_col = st.columns([5.4, 1.05, 1.05], vertical_alignment="center")
 with brand_col:
     st.markdown(
         f"""
@@ -218,7 +171,7 @@ with brand_col:
         unsafe_allow_html=True,
     )
 with voice_col:
-    if st.button("🎙️", key="voice_top", help="Notas rápidas"):
+    if st.button("🎙️", key="voice_top", help="Nueva nota rápida"):
         go("Semillero")
 with menu_col:
     with st.popover("☰", help="Abrir menú"):
@@ -263,76 +216,55 @@ def centro() -> None:
         unsafe_allow_html=True,
     )
 
-    # TAREAS
+    pendientes = [t for t in st.session_state.tareas if not t["hecha"] and t.get("fecha") == str(date.today())]
+    eventos_hoy = [e for e in st.session_state.eventos if e.get("fecha") == str(date.today())]
+
     st.markdown('<div class="section-label">✅ Tareas de hoy</div>', unsafe_allow_html=True)
-    pendientes = [t for t in st.session_state.tareas if not t["hecha"]][:3]
     if pendientes:
-        items = "".join(f"<li>{t['texto']}</li>" for t in pendientes)
-        st.markdown(
-            f'<div class="info-card"><ul class="compact-list">{items}</ul></div>',
-            unsafe_allow_html=True,
-        )
+        items = "".join(f"<li>{t['texto']}</li>" for t in pendientes[:4])
+        st.markdown(f'<div class="info-card"><ul class="compact-list">{items}</ul></div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="info-card"><p>No tienes tareas pendientes para hoy.</p></div>', unsafe_allow_html=True)
-    if st.button("Ver todas las tareas", key="home_tareas"):
+    if st.button("Ver y gestionar tareas", key="home_tareas"):
         go("Tareas")
 
-    # EVENTOS
     st.markdown('<div class="section-label">📍 Eventos de hoy</div>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="info-card">
-          <h3>Agenda cultural</h3>
-          <p>18:30 · Presentación literaria por revisar</p>
-          <p class="muted">Madrid · Pendiente de confirmar</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    if eventos_hoy:
+        eventos_html = "".join(
+            f"<p><strong>{e['hora']}</strong> · {e['titulo']}<br><span class='muted'>{e['lugar']}</span></p>"
+            for e in eventos_hoy[:3]
+        )
+        st.markdown(f'<div class="info-card">{eventos_html}</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="info-card"><p>No hay eventos añadidos para hoy.</p></div>', unsafe_allow_html=True)
     if st.button("Abrir calendario", key="home_cal"):
         go("Calendario")
 
-    # NOTAS
     st.markdown('<div class="section-label">🎙️ Notas rápidas</div>', unsafe_allow_html=True)
-    ultimas = st.session_state.semillero[:2]
-    notas_html = "".join(
-        f"<p><strong>{item['tipo']}:</strong> {item['texto']}</p>" for item in ultimas
-    )
-    st.markdown(f'<div class="info-card">{notas_html}</div>', unsafe_allow_html=True)
-    if st.button("Nueva nota o ver Semillero", key="home_sem"):
+    ultimas = st.session_state.semillero[:3]
+    notas_html = "".join(f"<p><strong>{item['tipo']}:</strong> {item['texto']}</p>" for item in ultimas)
+    st.markdown(f'<div class="info-card">{notas_html or "<p>No hay notas todavía.</p>"}</div>', unsafe_allow_html=True)
+    if st.button("Nueva nota o abrir Semillero", key="home_sem"):
         go("Semillero")
 
-    # NOTICIAS / RADAR
     st.markdown('<div class="section-label">📰 Noticias y oportunidades</div>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="info-card">
-          <h3>Radar literario</h3>
-          <p>• Presentación en Madrid para revisar.</p>
-          <p>• Concurso de relato histórico: cierra en 16 días.</p>
-          <p>• Próxima fecha clave: campaña de otoño.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    noticias_html = "".join(
+        f"<p><strong>{n['titulo']}</strong><br><span class='muted'>{n['detalle']}</span></p>"
+        for n in st.session_state.noticias[:3]
     )
+    st.markdown(f'<div class="info-card">{noticias_html}</div>', unsafe_allow_html=True)
     if st.button("Abrir Radar", key="home_radar"):
         go("Radar")
 
-    # CONTACTOS
     st.markdown('<div class="section-label">👥 Contactos rápidos</div>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="info-card">
-          <p><strong>Editorial Apuleyo</strong> · seguimiento editorial</p>
-          <p><strong>Librerías de Madrid</strong> · base de contactos pendiente</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    contactos_html = "".join(
+        f"<p><strong>{c['nombre']}</strong> · {c['tipo']}<br><span class='muted'>{c['nota']}</span></p>"
+        for c in st.session_state.contactos[:3]
     )
+    st.markdown(f'<div class="info-card">{contactos_html}</div>', unsafe_allow_html=True)
     if st.button("Abrir contactos", key="home_rel"):
         go("Relaciones")
 
-    # PROYECTO ACTIVO
     st.markdown('<div class="section-label">📚 Proyecto activo</div>', unsafe_allow_html=True)
     st.markdown(
         """
@@ -351,60 +283,86 @@ def centro() -> None:
 def semillero() -> None:
     st.title("🌱 Semillero")
     st.caption("Notas, ideas y capturas que todavía no tienen un destino definitivo.")
+
+    if hasattr(st, "audio_input"):
+        audio = st.audio_input("Grabar nota de voz")
+        if audio is not None:
+            st.audio(audio)
+            texto_audio = st.text_input("Título o resumen de la nota", key="audio_summary")
+            if st.button("Guardar nota de voz", key="save_audio"):
+                resumen = texto_audio.strip() or f"Nota de voz {datetime.now().strftime('%H:%M')}"
+                st.session_state.semillero.insert(
+                    0,
+                    {"tipo": "Nota de voz", "texto": resumen, "estado": "Por organizar", "fecha": str(date.today())},
+                )
+                st.success("Nota de voz añadida al Semillero.")
+                st.rerun()
+
     with st.form("nueva_semilla", clear_on_submit=True):
-        tipo = st.selectbox(
-            "Tipo",
-            ["Nota de voz", "Idea", "Contacto", "Evento", "Noticia", "Concurso", "Relato"],
-        )
-        texto = st.text_area(
-            "Contenido",
-            placeholder="Guarda aquí algo que todavía no sabes dónde colocar...",
-        )
+        tipo = st.selectbox("Tipo", ["Idea", "Nota", "Contacto", "Evento", "Noticia", "Concurso", "Relato"])
+        texto = st.text_area("Contenido", placeholder="Guarda aquí algo que todavía no sabes dónde colocar...")
         submitted = st.form_submit_button("Guardar en Semillero")
         if submitted and texto.strip():
             st.session_state.semillero.insert(
                 0,
-                {"tipo": tipo, "texto": texto.strip(), "estado": "Por organizar"},
+                {"tipo": tipo, "texto": texto.strip(), "estado": "Por organizar", "fecha": str(date.today())},
             )
             st.success("Guardado en Semillero.")
-    for item in st.session_state.semillero:
+            st.rerun()
+
+    for idx, item in enumerate(st.session_state.semillero):
         with st.container(border=True):
             st.subheader(item["tipo"])
             st.write(item["texto"])
-            st.caption(item["estado"])
+            st.caption(f"{item.get('estado', 'Por organizar')} · {item.get('fecha', '')}")
+            if st.button("Eliminar", key=f"delete_seed_{idx}"):
+                st.session_state.semillero.pop(idx)
+                st.rerun()
 
 
 def tareas() -> None:
     st.title("✅ Tareas")
     with st.form("nueva_tarea", clear_on_submit=True):
         texto = st.text_input("Nueva tarea")
+        fecha_tarea = st.date_input("Fecha", value=date.today())
         add = st.form_submit_button("Añadir")
         if add and texto.strip():
-            st.session_state.tareas.append({"texto": texto.strip(), "hecha": False})
+            st.session_state.tareas.append({"texto": texto.strip(), "hecha": False, "fecha": str(fecha_tarea)})
             st.success("Tarea añadida.")
-    st.subheader("Hoy")
-    for i, tarea in enumerate(st.session_state.tareas):
-        st.session_state.tareas[i]["hecha"] = st.checkbox(
-            tarea["texto"], value=tarea["hecha"], key=f"task_{i}"
-        )
+            st.rerun()
+
+    for i, tarea in enumerate(list(st.session_state.tareas)):
+        cols = st.columns([5.5, 1.2])
+        with cols[0]:
+            nueva = st.checkbox(
+                f"{tarea['texto']} · {tarea.get('fecha', '')}", value=tarea["hecha"], key=f"task_{i}"
+            )
+            st.session_state.tareas[i]["hecha"] = nueva
+        with cols[1]:
+            if st.button("🗑️", key=f"del_task_{i}", help="Eliminar tarea"):
+                st.session_state.tareas.pop(i)
+                st.rerun()
 
 
 def radar() -> None:
     st.title("🧭 Radar")
     tabs = st.tabs(["⭐ Recomendado", "🎤 Eventos", "🏆 Concursos", "📰 Noticias"])
     with tabs[0]:
-        with st.container(border=True):
-            st.subheader("Presentación en Madrid")
-            st.write("FNAC Callao · Pendiente de revisar")
-        with st.container(border=True):
-            st.subheader("Concurso de relato histórico")
-            st.write("Cierra en 16 días")
+        for noticia in st.session_state.noticias:
+            with st.container(border=True):
+                st.subheader(noticia["titulo"])
+                st.write(noticia["detalle"])
     with tabs[1]:
         st.write("Eventos literarios y culturales para revisar.")
     with tabs[2]:
         st.write("Concursos pendientes de clasificar.")
     with tabs[3]:
-        st.write("Noticias sobre lectura, escritura, lanzamientos y sector editorial.")
+        with st.form("nueva_noticia", clear_on_submit=True):
+            titulo = st.text_input("Titular")
+            detalle = st.text_input("Detalle o enlace")
+            if st.form_submit_button("Añadir noticia") and titulo.strip():
+                st.session_state.noticias.insert(0, {"titulo": titulo.strip(), "detalle": detalle.strip()})
+                st.rerun()
 
 
 def estudio() -> None:
@@ -417,18 +375,47 @@ def estudio() -> None:
 
 def calendario() -> None:
     st.title("📅 Calendario")
-    with st.container(border=True):
-        st.subheader("Esta semana")
-        st.write("Viernes: revisar radar del fin de semana.")
-        st.write("Domingo por la tarde: reunión de dirección.")
+    with st.form("nuevo_evento", clear_on_submit=True):
+        titulo = st.text_input("Evento")
+        fecha_evento = st.date_input("Fecha", value=date.today())
+        hora = st.time_input("Hora")
+        lugar = st.text_input("Lugar")
+        if st.form_submit_button("Añadir evento") and titulo.strip():
+            st.session_state.eventos.append(
+                {"titulo": titulo.strip(), "fecha": str(fecha_evento), "hora": hora.strftime("%H:%M"), "lugar": lugar.strip()}
+            )
+            st.success("Evento añadido.")
+            st.rerun()
+
+    for idx, evento in enumerate(sorted(st.session_state.eventos, key=lambda e: (e.get("fecha", ""), e.get("hora", "")))):
+        with st.container(border=True):
+            st.subheader(evento["titulo"])
+            st.write(f"{evento.get('fecha', '')} · {evento.get('hora', '')}")
+            st.caption(evento.get("lugar", ""))
+            if st.button("Eliminar evento", key=f"del_event_{idx}"):
+                st.session_state.eventos.remove(evento)
+                st.rerun()
 
 
 def relaciones() -> None:
     st.title("🤝 Contactos")
-    with st.container(border=True):
-        st.subheader("Acceso rápido")
-        st.write("Editoriales, librerías, bibliotecas, autores, prensa y clubes de lectura.")
-        st.caption("La base de contactos editable llegará en la siguiente fase.")
+    with st.form("nuevo_contacto", clear_on_submit=True):
+        nombre = st.text_input("Nombre")
+        tipo = st.selectbox("Tipo", ["Editorial", "Librería", "Biblioteca", "Autor/a", "Prensa", "Club de lectura", "Otro"])
+        nota = st.text_input("Nota rápida")
+        if st.form_submit_button("Guardar contacto") and nombre.strip():
+            st.session_state.contactos.insert(0, {"nombre": nombre.strip(), "tipo": tipo, "nota": nota.strip()})
+            st.success("Contacto guardado.")
+            st.rerun()
+
+    for idx, contacto in enumerate(st.session_state.contactos):
+        with st.container(border=True):
+            st.subheader(contacto["nombre"])
+            st.write(contacto["tipo"])
+            st.caption(contacto["nota"])
+            if st.button("Eliminar contacto", key=f"del_contact_{idx}"):
+                st.session_state.contactos.pop(idx)
+                st.rerun()
 
 
 def libros() -> None:
@@ -450,35 +437,32 @@ def ideas_app() -> None:
         if ok and idea.strip():
             st.session_state.ideas_app.insert(0, idea.strip())
             st.success("Idea guardada.")
-    for idea in st.session_state.ideas_app:
+            st.rerun()
+    for idx, idea in enumerate(st.session_state.ideas_app):
         with st.container(border=True):
             st.write(idea)
             st.caption("Nueva")
+            if st.button("Eliminar", key=f"del_idea_{idx}"):
+                st.session_state.ideas_app.pop(idx)
+                st.rerun()
 
 
 def ajustes() -> None:
     st.title("⚙️ Ajustes")
-    st.write("Próximamente: Drive, copias, exportaciones y preferencias.")
+    st.info("En esta fase los datos se conservan mientras la sesión de Streamlit permanece activa. La conexión permanente con Google Drive será el siguiente paso técnico.")
 
 
-page = st.session_state.page
-if page == "Centro de Operaciones":
-    centro()
-elif page == "Semillero":
-    semillero()
-elif page == "Tareas":
-    tareas()
-elif page == "Radar":
-    radar()
-elif page == "Estudio":
-    estudio()
-elif page == "Calendario":
-    calendario()
-elif page == "Relaciones":
-    relaciones()
-elif page == "Libros y relatos":
-    libros()
-elif page == "Ideas para la app":
-    ideas_app()
-elif page == "Ajustes":
-    ajustes()
+ROUTES = {
+    "Centro de Operaciones": centro,
+    "Semillero": semillero,
+    "Tareas": tareas,
+    "Radar": radar,
+    "Estudio": estudio,
+    "Calendario": calendario,
+    "Relaciones": relaciones,
+    "Libros y relatos": libros,
+    "Ideas para la app": ideas_app,
+    "Ajustes": ajustes,
+}
+
+ROUTES.get(st.session_state.page, centro)()
